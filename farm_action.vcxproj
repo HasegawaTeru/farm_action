@@ -137,6 +137,9 @@
   <ItemGroup>
     <ClCompile Include="E:\1年\田中先生\2Dプログラム\DxLib_VC3_24f\WinMain.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="WinMain.h" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
