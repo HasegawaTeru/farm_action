@@ -7,7 +7,6 @@ namespace
 {
     const int MenuLeft = 700;
     const int MenuRight = 1220;
-
     const int MenuTop = 420;
     const int MenuSpacing = 110;
     const int MenuHeight = 80;
@@ -16,15 +15,22 @@ namespace
 void SceneManager::Init()
 {
     scene_ = Scene::Title;
+
     quit_ = false;
     showSettings_ = false;
 
     player_.Init();
+    target_.Init();
+
+    showAttackBounds_ = true;
 }
 
 void SceneManager::StartStage()
 {
     player_.Init();
+    target_.Init();
+
+    showAttackBounds_ = true;
     scene_ = Scene::Stage;
 }
 
@@ -49,7 +55,6 @@ void SceneManager::Update(const Input& input, float seconds)
             return;
         }
 
-        // マウスでタイトルの項目を選択する。
         if (input.IsLeftClickPressed()
             && input.MouseX() >= MenuLeft
             && input.MouseX() < MenuRight)
@@ -76,11 +81,24 @@ void SceneManager::Update(const Input& input, float seconds)
         return;
     }
 
-    // STEP 1ではESCでタイトルへ戻る。
+    // 現段階ではESCでタイトルへ戻る。
     if (input.IsPressed(KEY_INPUT_ESCAPE))
     {
         scene_ = Scene::Title;
         return;
+    }
+
+    // 戦闘テスト用のリセット。
+    // 正式なゲームオーバー処理はSTEP 6で追加する。
+    if (input.IsPressed(KEY_INPUT_R))
+    {
+        StartStage();
+        return;
+    }
+
+    if (input.IsPressed(KEY_INPUT_F1))
+    {
+        showAttackBounds_ = !showAttackBounds_;
     }
 
     const int horizontal =
@@ -90,8 +108,29 @@ void SceneManager::Update(const Input& input, float seconds)
     player_.Update(
         seconds,
         horizontal,
-        input.IsPressed(KEY_INPUT_SPACE)
+        input.IsPressed(KEY_INPUT_SPACE),
+        input.IsLeftClickPressed()
     );
+
+    target_.Update(seconds);
+    target_.TryHit(player_);
+
+    // 攻撃判定を先に処理し、
+    // 倒した標的からは接触ダメージを受けないようにする。
+    if (target_.IsAlive()
+        && Overlaps(player_.Bounds(), target_.Bounds()))
+    {
+        const int direction =
+            player_.X() + GameConfig::PlayerWidth * 0.5f
+            < target_.Bounds().x + GameConfig::TargetWidth * 0.5f
+            ? -1
+            : 1;
+
+        player_.TakeDamage(
+            GameConfig::TargetContactDamage,
+            direction
+        );
+    }
 }
 
 void SceneManager::Draw() const
@@ -102,7 +141,7 @@ void SceneManager::Draw() const
     {
         DrawString(
             800, 260,
-            "料理アクション - STEP 1",
+            "料理アクション - STEP 2",
             white
         );
 
@@ -116,7 +155,7 @@ void SceneManager::Draw() const
 
             DrawString(
                 700, 470,
-                "STEP 1では設定は固定です。PCの設定は変更しません。",
+                "設定は固定です。PCの設定は変更しません。",
                 white
             );
 
@@ -166,7 +205,7 @@ void SceneManager::Draw() const
         return;
     }
 
-    // 地面を茶色の長方形で描画する。
+    // 地面。
     DrawBox(
         0,
         static_cast<int>(GameConfig::GroundY),
@@ -176,28 +215,143 @@ void SceneManager::Draw() const
         TRUE
     );
 
-    // プレイヤーを青色の四角形で描画する。
     const int x = static_cast<int>(player_.X());
     const int y = static_cast<int>(player_.Y());
 
+    // 無敵中は表示・非表示を切り替える。
+    if (player_.IsVisible())
+    {
+        DrawBox(
+            x,
+            y,
+            x + static_cast<int>(GameConfig::PlayerWidth),
+            y + static_cast<int>(GameConfig::PlayerHeight),
+            GetColor(40, 120, 255),
+            TRUE
+        );
+
+        // プレイヤーの向きを示す目印。
+        const int eyeX =
+            player_.Facing() > 0 ? x + 48 : x + 8;
+
+        DrawBox(
+            eyeX,
+            y + 20,
+            eyeX + 8,
+            y + 28,
+            white,
+            TRUE
+        );
+    }
+
+    // 攻撃判定のデバッグ表示。
+    if (showAttackBounds_ && player_.IsAttacking())
+    {
+        const Rect hit = player_.AttackBounds();
+
+        DrawBox(
+            static_cast<int>(hit.x),
+            static_cast<int>(hit.y),
+            static_cast<int>(hit.x + hit.width),
+            static_cast<int>(hit.y + hit.height),
+            GetColor(255, 220, 50),
+            FALSE
+        );
+    }
+
+    // 戦闘確認用の標的。
+    const Rect target = target_.Bounds();
+
+    if (target_.IsAlive())
+    {
+        DrawBox(
+            static_cast<int>(target.x),
+            static_cast<int>(target.y),
+            static_cast<int>(target.x + target.width),
+            static_cast<int>(target.y + target.height),
+            GetColor(50, 190, 80),
+            TRUE
+        );
+
+        DrawFormatString(
+            static_cast<int>(target.x),
+            static_cast<int>(target.y) - 30,
+            white,
+            "標的 HP %d",
+            target_.Hp()
+        );
+    }
+
+    if (target_.ShowsDamage())
+    {
+        DrawFormatString(
+            static_cast<int>(target.x),
+            static_cast<int>(target.y) - 60,
+            GetColor(255, 230, 80),
+            "-%d",
+            target_.LastDamage()
+        );
+    }
+
+    // 操作説明。
+    DrawString(
+        40, 30,
+        "STEP 2: A・D 移動 / Space ジャンプ / 左クリック 攻撃",
+        white
+    );
+
+    DrawString(
+        40, 65,
+        "F1 攻撃範囲表示の切替 / R テストをリセット / ESC タイトル",
+        white
+    );
+
+    DrawString(
+        40, 100,
+        "緑の標的に触れると被ダメージ。敵AIは未実装です。",
+        white
+    );
+
+    // HPゲージの背景。
     DrawBox(
-        x,
-        y,
-        x + static_cast<int>(GameConfig::PlayerWidth),
-        y + static_cast<int>(GameConfig::PlayerHeight),
-        GetColor(40, 120, 255),
+        40, 145,
+        340, 170,
+        GetColor(60, 60, 60),
         TRUE
     );
 
-    DrawString(
-        40, 40,
-        "STEP 1: A・Dで移動 / Spaceでジャンプ / ESCでタイトル",
-        white
+    // 現在HPの割合に応じた緑色のゲージ。
+    DrawBox(
+        40, 145,
+        40 + 300 * player_.Hp() / player_.MaxHp(),
+        170,
+        GetColor(40, 210, 70),
+        TRUE
     );
 
-    DrawString(
-        40, 80,
-        player_.IsGrounded() ? "接地中" : "空中",
-        white
+    DrawFormatString(
+        40, 185,
+        white,
+        "Lv.1  HP %d / %d  攻撃力 %d",
+        player_.Hp(),
+        player_.MaxHp(),
+        player_.AttackPower()
     );
+
+    if (!player_.IsAlive())
+    {
+        DrawString(
+            700, 420,
+            "HPが0になりました。Rでテストを再開できます。",
+            white
+        );
+    }
+    else if (!target_.IsAlive())
+    {
+        DrawString(
+            700, 420,
+            "標的を倒しました。Rで再配置できます。",
+            white
+        );
+    }
 }
