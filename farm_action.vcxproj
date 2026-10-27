@@ -164,6 +164,7 @@
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="Progression.cpp" />
     <ClCompile Include="RecipeData.cpp" />
+    <ClCompile Include="SceneDraw.cpp" />
     <ClCompile Include="SceneManager.cpp" />
     <ClCompile Include="Slime.cpp" />
     <ClCompile Include="StageItems.cpp" />
