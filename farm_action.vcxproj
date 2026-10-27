@@ -135,10 +135,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="E:\1年\田中先生\2Dプログラム\DxLib_VC3_24f\WinMain.cpp" />
+    <ClInclude Include="WinMain.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="WinMain.h" />
+    <ClCompile Include="WinMain.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
