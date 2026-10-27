@@ -19,6 +19,9 @@ void SceneManager::Init()
     quit_ = false;
     showSettings_ = false;
 
+    inventory_.Clear();
+    stageItems_.Discard();
+
     player_.Init();
 
     for (int i = 0; i < GameConfig::SlimeCount; ++i)
@@ -36,6 +39,9 @@ void SceneManager::Init()
 
 void SceneManager::StartStage()
 {
+    // 新しい挑戦として一時データ・採取ポイントを初期化。
+    stageItems_.Begin(inventory_);
+
     player_.Init();
 
     for (int i = 0; i < GameConfig::SlimeCount; ++i)
@@ -102,14 +108,16 @@ void SceneManager::Update(
         return;
     }
 
-    // 正式なゲーム内メニューは後続STEPで追加する。
+    // タイトルへ戻る場合、一時食材は破棄する。
     if (input.IsPressed(KEY_INPUT_ESCAPE))
     {
+        stageItems_.Discard();
+
         scene_ = Scene::Title;
         return;
     }
 
-    // Rは動作確認用の再挑戦。
+    // Rはテスト用の再挑戦。
     if (input.IsPressed(KEY_INPUT_R))
     {
         StartStage();
@@ -132,21 +140,27 @@ void SceneManager::Update(
         input.IsLeftClickPressed()
     );
 
-    for (Slime& slime : slimes_)
+    for (int i = 0; i < GameConfig::SlimeCount; ++i)
     {
+        Slime& slime = slimes_[i];
+
         slime.Update(seconds, player_);
 
         const bool wasAlive = slime.IsAlive();
 
         slime.TryHit(player_);
 
-        // 生存から撃破へ変化した瞬間に一度だけ加算する。
+        // 撃破した瞬間だけ、討伐数とドロップを処理する。
         if (wasAlive && !slime.IsAlive())
         {
             ++defeatedCount_;
+
+            stageItems_.DropSlimeLoot(
+                static_cast<unsigned int>(i),
+                slime.Bounds()
+            );
         }
 
-        // 倒した敵は接触ダメージを発生させない。
         if (slime.IsAlive()
             && slime.Intersects(player_.Bounds()))
         {
@@ -164,6 +178,20 @@ void SceneManager::Update(
             );
         }
     }
+
+    // HP 0では一時食材を失う。
+    if (!player_.IsAlive())
+    {
+        stageItems_.Discard();
+    }
+
+    // 戦闘後に食材の取得を処理する。
+    stageItems_.Update(
+        seconds,
+        player_.Bounds(),
+        player_.IsAlive(),
+        input.IsPressed(KEY_INPUT_E)
+    );
 }
 
 void SceneManager::Draw() const
@@ -175,7 +203,7 @@ void SceneManager::Draw() const
     {
         DrawString(
             800, 260,
-            "料理アクション - STEP 3",
+            "料理アクション - STEP 4",
             white
         );
 
@@ -250,6 +278,81 @@ void SceneManager::Draw() const
         TRUE
     );
 
+    // 地面に落ちている食材。
+    for (const IngredientDrop& drop : stageItems_.Drops())
+    {
+        const Rect& b = drop.bounds;
+
+        DrawBox(
+            static_cast<int>(b.x),
+            static_cast<int>(b.y),
+            static_cast<int>(b.x + b.width),
+            static_cast<int>(b.y + b.height),
+            GetColor(255, 220, 40),
+            TRUE
+        );
+    }
+
+    const int nearby =
+        player_.IsAlive()
+        ? stageItems_.NearbyPoint(player_.Bounds())
+        : -1;
+
+    // 採取ポイント。
+    for (int i = 0; i < ItemSettings::GatherPointCount; ++i)
+    {
+        const GatherPoint& point =
+            stageItems_.Points()[i];
+
+        const Rect& b = point.bounds;
+
+        const int centerX = static_cast<int>(
+            b.x + b.width * 0.5f
+            );
+
+        const unsigned int stemColor =
+            point.depleted
+            ? GetColor(100, 100, 100)
+            : GetColor(30, 170, 60);
+
+        DrawBox(
+            centerX - 4,
+            static_cast<int>(b.y),
+            centerX + 4,
+            static_cast<int>(b.y + b.height),
+            stemColor,
+            TRUE
+        );
+
+        if (!point.depleted)
+        {
+            DrawCircle(
+                centerX,
+                static_cast<int>(b.y) + 10,
+                18,
+                GetColor(60, 220, 90),
+                TRUE
+            );
+        }
+
+        DrawString(
+            centerX - 40,
+            static_cast<int>(b.y) - 30,
+            point.depleted ? "採取済み" : "香草",
+            white
+        );
+
+        if (nearby == i)
+        {
+            DrawString(
+                centerX - 40,
+                static_cast<int>(b.y) - 60,
+                "Eで採取",
+                white
+            );
+        }
+    }
+
     // プレイヤー。
     const int x = static_cast<int>(player_.X());
     const int y = static_cast<int>(player_.Y());
@@ -265,7 +368,6 @@ void SceneManager::Draw() const
             TRUE
         );
 
-        // プレイヤーの向きを示す目印。
         const int eyeX =
             player_.Facing() > 0 ? x + 48 : x + 8;
 
@@ -279,7 +381,7 @@ void SceneManager::Draw() const
         );
     }
 
-    // プレイヤーの攻撃判定。
+    // プレイヤーの攻撃範囲。
     if (showAttackBounds_ && player_.IsAttacking())
     {
         const Rect hit = player_.AttackBounds();
@@ -343,7 +445,6 @@ void SceneManager::Draw() const
                 TRUE
             );
 
-            // スライムの向きを示す目印。
             DrawCircle(
                 centerX + slime.Facing() * 14,
                 centerY - 10,
@@ -370,7 +471,6 @@ void SceneManager::Draw() const
             );
         }
 
-        // 撃破直後も一定時間はダメージ数値を表示する。
         if (slime.ShowsDamage())
         {
             DrawFormatString(
@@ -386,7 +486,7 @@ void SceneManager::Draw() const
     // 操作説明。
     DrawString(
         40, 30,
-        "STEP 3: A・D 移動 / Space ジャンプ / 左クリック 攻撃",
+        "STEP 4: A・D 移動 / Space ジャンプ / 左クリック 攻撃",
         white
     );
 
@@ -398,7 +498,7 @@ void SceneManager::Draw() const
 
     DrawString(
         40, 100,
-        "黄: 予備動作 / 赤: 飛び込み / くすんだ緑: 着地後の隙",
+        "黄色い食材は触れて取得 / 香草は近くでE / ESC・R・HP 0で一時食材を破棄",
         white
     );
 
@@ -439,7 +539,7 @@ void SceneManager::Draw() const
     {
         DrawString(
             700, 420,
-            "全スライムを撃破しました。Rで再挑戦できます。",
+            "全スライムを撃破しました。食材を拾って採取も試せます。",
             white
         );
     }
@@ -451,4 +551,51 @@ void SceneManager::Draw() const
         defeatedCount_,
         GameConfig::SlimeCount
     );
+
+    // 正式な持ち物と、今回の一時取得分を分けて表示。
+    for (int i = 0; i < ItemSettings::IngredientCount; ++i)
+    {
+        const Ingredient item =
+            static_cast<Ingredient>(i);
+
+        DrawFormatString(
+            40,
+            260 + i * 30,
+            white,
+            "%s 所持 %d / 今回 +%d",
+            IngredientName(item),
+            inventory_.Count(item),
+            stageItems_.Pending().Count(item)
+        );
+    }
+
+    DrawString(
+        40, 330,
+        "今回の食材は未確定です。退出・再挑戦・HP 0で失われます。",
+        white
+    );
+
+    // 取得通知・所持上限の通知。
+    if (stageItems_.HasNotice())
+    {
+        if (stageItems_.NoticeQuantity() > 0)
+        {
+            DrawFormatString(
+                700, 220,
+                GetColor(255, 230, 80),
+                "%s x%d 取得（一時）",
+                IngredientName(stageItems_.NoticeItem()),
+                stageItems_.NoticeQuantity()
+            );
+        }
+        else
+        {
+            DrawFormatString(
+                700, 220,
+                GetColor(255, 160, 80),
+                "%s は所持上限です",
+                IngredientName(stageItems_.NoticeItem())
+            );
+        }
+    }
 }
