@@ -1,16 +1,9 @@
 #pragma once
 
-#include "Player.h"
-#include "Slime.h"
-#include "GameConfig.h"
-#include "StageItems.h"
-
-#include <array>
+#include "GameSession.h"
 
 class Input;
 
-// 現段階はタイトルと動作確認ステージのみ。
-// 町はSTEP 5で追加する。
 class SceneManager
 {
 public:
@@ -28,33 +21,48 @@ public:
         return quit_;
     }
 
-private:
-    enum class Scene
+    // デバッグ・検証用の読み取り専用参照。
+    const GameSession& State() const
     {
-        Title,
-        Stage
+        return session_;
+    }
+
+    bool IsMenuOpen() const
+    {
+        return menu_ != Menu::None;
+    }
+
+private:
+    enum class Menu
+    {
+        None,
+        Pause,
+        Settings,
+        Inventory,
+        Kitchen,
+        Board,
+        House
     };
 
-    void StartStage();
+    void UpdateMenu(const Input& input);
 
-    Scene scene_ = Scene::Title;
+    void DrawTitle() const;
+    void DrawTown() const;
+    void DrawStage() const;
+    void DrawHud() const;
+    void DrawMenu() const;
 
-    Player player_;
+    GameSession session_;
 
-    std::array<
-        Slime,
-        GameConfig::SlimeCount
-    > slimes_;
+    Menu menu_ = Menu::None;
 
-    int defeatedCount_ = 0;
+    FoodInventory selection_;
 
-    // 正式な持ち物。
-    Inventory inventory_;
+    Dish selectedDish_ = Dish::Jelly;
 
-    // 今回のステージの食材。
-    StageItems stageItems_;
+    bool foodCategory_ = false;
 
-    bool showAttackBounds_ = true;
+    bool title_ = true;
     bool quit_ = false;
-    bool showSettings_ = false;
+    bool showAttackBounds_ = true;
 };

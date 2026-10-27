@@ -2,11 +2,19 @@
 
 #include "Collision.h"
 
-// 入力・描画APIから独立した、プレイヤーの移動と戦闘状態。
+// 入力・描画APIから独立した移動・戦闘・料理効果の状態。
 class Player
 {
 public:
     void Init();
+    void Init(int maxHp, int attackPower);
+
+    int Heal(int amount);
+
+    bool ApplyJumpBuff(float multiplier, float seconds);
+
+    float BuffRemaining() const { return buffRemaining_; }
+    float JumpMultiplier() const { return jumpMultiplier_; }
 
     void Update(
         float seconds,
@@ -61,8 +69,12 @@ private:
     bool grounded_ = false;
 
     int hp_ = 0;
+    int maxHp_ = 0;
+    int attackPower_ = 0;
 
-    // 右向きは1、左向きは-1。
+    float buffRemaining_ = 0.0f;
+    float jumpMultiplier_ = 1.0f;
+
     int facing_ = 1;
     int attackDirection_ = 1;
 

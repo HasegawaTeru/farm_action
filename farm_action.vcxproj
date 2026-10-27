@@ -137,26 +137,37 @@
   <ItemGroup>
     <ClInclude Include="Collision.h" />
     <ClInclude Include="CombatMotion.h" />
+    <ClInclude Include="CookingManager.h" />
     <ClInclude Include="Enemy.h" />
     <ClInclude Include="GameConfig.h" />
+    <ClInclude Include="GameSession.h" />
     <ClInclude Include="Input.h" />
     <ClInclude Include="Inventory.h" />
     <ClInclude Include="ItemData.h" />
     <ClInclude Include="Player.h" />
+    <ClInclude Include="Progression.h" />
+    <ClInclude Include="RecipeData.h" />
     <ClInclude Include="SceneManager.h" />
     <ClInclude Include="Slime.h" />
     <ClInclude Include="StageItems.h" />
+    <ClInclude Include="Town.h" />
     <ClInclude Include="TrainingTarget.h" />
+    <ClInclude Include="UIConfig.h" />
     <ClInclude Include="WinMain.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CookingManager.cpp" />
     <ClCompile Include="Enemy.cpp" />
+    <ClCompile Include="GameSession.cpp" />
     <ClCompile Include="Input.cpp" />
     <ClCompile Include="Inventory.cpp" />
     <ClCompile Include="Player.cpp" />
+    <ClCompile Include="Progression.cpp" />
+    <ClCompile Include="RecipeData.cpp" />
     <ClCompile Include="SceneManager.cpp" />
     <ClCompile Include="Slime.cpp" />
     <ClCompile Include="StageItems.cpp" />
+    <ClCompile Include="Town.cpp" />
     <ClCompile Include="TrainingTarget.cpp" />
     <ClCompile Include="WinMain.cpp" />
   </ItemGroup>

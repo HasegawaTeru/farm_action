@@ -6,6 +6,14 @@
 
 void Player::Init()
 {
+    Init(
+        GameConfig::PlayerMaxHp,
+        GameConfig::PlayerAttackPower
+    );
+}
+
+void Player::Init(int maxHp, int attackPower)
+{
     x_ = 200.0f;
     y_ = GameConfig::GroundY - GameConfig::PlayerHeight;
 
@@ -14,11 +22,15 @@ void Player::Init()
 
     grounded_ = true;
 
-    hp_ = GameConfig::PlayerMaxHp;
+    maxHp_ = std::max(1, maxHp);
+    attackPower_ = std::max(1, attackPower);
+    hp_ = maxHp_;
+
+    buffRemaining_ = 0.0f;
+    jumpMultiplier_ = 1.0f;
 
     facing_ = 1;
     attackDirection_ = 1;
-
     attackId_ = 0;
 
     attackRemaining_ = 0.0f;
@@ -37,7 +49,6 @@ void Player::Update(
         return;
     }
 
-    // 長時間停止後の極端な移動を防ぐ。
     seconds = std::min(
         seconds,
         GameConfig::MaxFrameSeconds
@@ -58,6 +69,16 @@ void Player::Update(
         seconds
     );
 
+    buffRemaining_ = AdvanceTimer(
+        buffRemaining_,
+        seconds
+    );
+
+    if (buffRemaining_ == 0.0f)
+    {
+        jumpMultiplier_ = 1.0f;
+    }
+
     if (!IsAlive())
     {
         return;
@@ -65,13 +86,12 @@ void Player::Update(
 
     horizontal = std::max(-1, std::min(1, horizontal));
 
-    // 攻撃中も移動できるが、向きは攻撃開始時のまま固定する。
+    // 攻撃中は向きを固定する。移動は可能。
     if (!IsAttacking() && horizontal != 0)
     {
         facing_ = horizontal;
     }
 
-    // 攻撃間隔を過ぎていれば、新しい攻撃を開始する。
     if (attackPressed && attackCooldown_ == 0.0f)
     {
         attackRemaining_ = GameConfig::AttackDuration;
@@ -81,7 +101,6 @@ void Player::Update(
         ++attackId_;
     }
 
-    // 通常移動にノックバックによる移動を加える。
     x_ += horizontal * GameConfig::MoveSpeed * seconds
         + AdvanceKnockback(knockbackVelocity_, seconds);
 
@@ -93,16 +112,16 @@ void Player::Update(
         )
     );
 
-    // 接地中に押した瞬間だけジャンプする。
     if (jumpPressed && grounded_)
     {
-        velocityY_ = -GameConfig::JumpSpeed;
+        velocityY_ =
+            -GameConfig::JumpSpeed * jumpMultiplier_;
+
         grounded_ = false;
     }
 
     if (!grounded_)
     {
-        // 等加速度運動を使い、フレーム間隔による軌道の差を抑える。
         y_ += velocityY_ * seconds
             + 0.5f * GameConfig::Gravity * seconds * seconds;
 
@@ -120,17 +139,16 @@ void Player::Update(
 
 int Player::MaxHp() const
 {
-    return GameConfig::PlayerMaxHp;
+    return maxHp_;
 }
 
 int Player::AttackPower() const
 {
-    return GameConfig::PlayerAttackPower;
+    return attackPower_;
 }
 
 bool Player::TakeDamage(int damage, int knockbackDirection)
 {
-    // 無敵中・HP 0・無効なダメージは受け付けない。
     if (!IsAlive() || IsInvincible() || damage <= 0)
     {
         return false;
@@ -138,13 +156,13 @@ bool Player::TakeDamage(int damage, int knockbackDirection)
 
     hp_ = damage >= hp_ ? 0 : hp_ - damage;
 
-    invincibleRemaining_ = GameConfig::InvincibleDuration;
+    invincibleRemaining_ =
+        GameConfig::InvincibleDuration;
 
     knockbackVelocity_ =
         (knockbackDirection < 0 ? -1.0f : 1.0f)
         * GameConfig::KnockbackSpeed;
 
-    // HP 0になった場合は攻撃を終了する。
     if (!IsAlive())
     {
         attackRemaining_ = 0.0f;
@@ -160,7 +178,6 @@ bool Player::IsVisible() const
         return true;
     }
 
-    // 無敵中は一定間隔で表示・非表示を切り替える。
     const float elapsed =
         GameConfig::InvincibleDuration - invincibleRemaining_;
 
@@ -193,4 +210,37 @@ Rect Player::AttackBounds() const
         GameConfig::AttackReach,
         GameConfig::AttackHeight
     };
+}
+
+int Player::Heal(int amount)
+{
+    if (!IsAlive() || amount <= 0)
+    {
+        return 0;
+    }
+
+    const int restored =
+        std::min(amount, maxHp_ - hp_);
+
+    hp_ += restored;
+
+    return restored;
+}
+
+bool Player::ApplyJumpBuff(float multiplier, float seconds)
+{
+    if (!IsAlive()
+        || !std::isfinite(multiplier)
+        || !std::isfinite(seconds)
+        || multiplier < 1.0f
+        || seconds <= 0.0f)
+    {
+        return false;
+    }
+
+    // 新しい強化は倍率と残り時間を上書きする。
+    jumpMultiplier_ = multiplier;
+    buffRemaining_ = seconds;
+
+    return true;
 }
