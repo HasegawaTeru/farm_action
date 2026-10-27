@@ -20,21 +20,42 @@ void SceneManager::Init()
     showSettings_ = false;
 
     player_.Init();
-    target_.Init();
 
+    for (int i = 0; i < GameConfig::SlimeCount; ++i)
+    {
+        slimes_[i].Init(
+            GameConfig::SlimeSpawnX[i],
+            GameConfig::StageBaseLevel,
+            1
+        );
+    }
+
+    defeatedCount_ = 0;
     showAttackBounds_ = true;
 }
 
 void SceneManager::StartStage()
 {
     player_.Init();
-    target_.Init();
 
+    for (int i = 0; i < GameConfig::SlimeCount; ++i)
+    {
+        slimes_[i].Init(
+            GameConfig::SlimeSpawnX[i],
+            GameConfig::StageBaseLevel,
+            1
+        );
+    }
+
+    defeatedCount_ = 0;
     showAttackBounds_ = true;
+
     scene_ = Scene::Stage;
 }
 
-void SceneManager::Update(const Input& input, float seconds)
+void SceneManager::Update(
+    const Input& input,
+    float seconds)
 {
     if (scene_ == Scene::Title)
     {
@@ -81,15 +102,14 @@ void SceneManager::Update(const Input& input, float seconds)
         return;
     }
 
-    // 現段階ではESCでタイトルへ戻る。
+    // 正式なゲーム内メニューは後続STEPで追加する。
     if (input.IsPressed(KEY_INPUT_ESCAPE))
     {
         scene_ = Scene::Title;
         return;
     }
 
-    // 戦闘テスト用のリセット。
-    // 正式なゲームオーバー処理はSTEP 6で追加する。
+    // Rは動作確認用の再挑戦。
     if (input.IsPressed(KEY_INPUT_R))
     {
         StartStage();
@@ -112,36 +132,50 @@ void SceneManager::Update(const Input& input, float seconds)
         input.IsLeftClickPressed()
     );
 
-    target_.Update(seconds);
-    target_.TryHit(player_);
-
-    // 攻撃判定を先に処理し、
-    // 倒した標的からは接触ダメージを受けないようにする。
-    if (target_.IsAlive()
-        && Overlaps(player_.Bounds(), target_.Bounds()))
+    for (Slime& slime : slimes_)
     {
-        const int direction =
-            player_.X() + GameConfig::PlayerWidth * 0.5f
-            < target_.Bounds().x + GameConfig::TargetWidth * 0.5f
-            ? -1
-            : 1;
+        slime.Update(seconds, player_);
 
-        player_.TakeDamage(
-            GameConfig::TargetContactDamage,
-            direction
-        );
+        const bool wasAlive = slime.IsAlive();
+
+        slime.TryHit(player_);
+
+        // 生存から撃破へ変化した瞬間に一度だけ加算する。
+        if (wasAlive && !slime.IsAlive())
+        {
+            ++defeatedCount_;
+        }
+
+        // 倒した敵は接触ダメージを発生させない。
+        if (slime.IsAlive()
+            && slime.Intersects(player_.Bounds()))
+        {
+            const Rect bounds = slime.Bounds();
+
+            const int direction =
+                player_.X() + GameConfig::PlayerWidth * 0.5f
+                < bounds.x + bounds.width * 0.5f
+                ? -1
+                : 1;
+
+            player_.TakeDamage(
+                slime.AttackPower(),
+                direction
+            );
+        }
     }
 }
 
 void SceneManager::Draw() const
 {
-    const unsigned int white = GetColor(255, 255, 255);
+    const unsigned int white =
+        GetColor(255, 255, 255);
 
     if (scene_ == Scene::Title)
     {
         DrawString(
             800, 260,
-            "料理アクション - STEP 2",
+            "料理アクション - STEP 3",
             white
         );
 
@@ -177,7 +211,8 @@ void SceneManager::Draw() const
 
         for (int i = 0; i < 3; ++i)
         {
-            const int top = MenuTop + MenuSpacing * i;
+            const int top =
+                MenuTop + MenuSpacing * i;
 
             DrawBox(
                 MenuLeft,
@@ -215,10 +250,10 @@ void SceneManager::Draw() const
         TRUE
     );
 
+    // プレイヤー。
     const int x = static_cast<int>(player_.X());
     const int y = static_cast<int>(player_.Y());
 
-    // 無敵中は表示・非表示を切り替える。
     if (player_.IsVisible())
     {
         DrawBox(
@@ -244,7 +279,7 @@ void SceneManager::Draw() const
         );
     }
 
-    // 攻撃判定のデバッグ表示。
+    // プレイヤーの攻撃判定。
     if (showAttackBounds_ && player_.IsAttacking())
     {
         const Rect hit = player_.AttackBounds();
@@ -259,44 +294,99 @@ void SceneManager::Draw() const
         );
     }
 
-    // 戦闘確認用の標的。
-    const Rect target = target_.Bounds();
-
-    if (target_.IsAlive())
+    // スライム。
+    for (const Slime& slime : slimes_)
     {
-        DrawBox(
-            static_cast<int>(target.x),
-            static_cast<int>(target.y),
-            static_cast<int>(target.x + target.width),
-            static_cast<int>(target.y + target.height),
-            GetColor(50, 190, 80),
-            TRUE
-        );
+        const Rect bounds = slime.Bounds();
 
-        DrawFormatString(
-            static_cast<int>(target.x),
-            static_cast<int>(target.y) - 30,
-            white,
-            "標的 HP %d",
-            target_.Hp()
-        );
-    }
+        const int centerX = static_cast<int>(
+            bounds.x + bounds.width * 0.5f
+            );
 
-    if (target_.ShowsDamage())
-    {
-        DrawFormatString(
-            static_cast<int>(target.x),
-            static_cast<int>(target.y) - 60,
-            GetColor(255, 230, 80),
-            "-%d",
-            target_.LastDamage()
-        );
+        const int centerY = static_cast<int>(
+            bounds.y + bounds.height * 0.5f
+            );
+
+        if (slime.IsAlive())
+        {
+            const char* stateText = "待機・巡回";
+
+            unsigned int color =
+                GetColor(50, 190, 80);
+
+            switch (slime.CurrentState())
+            {
+            case Slime::State::Windup:
+                stateText = "予備動作";
+                color = GetColor(240, 190, 40);
+                break;
+
+            case Slime::State::Jumping:
+                stateText = "飛び込み";
+                color = GetColor(240, 80, 50);
+                break;
+
+            case Slime::State::Recovery:
+                stateText = "着地後の隙";
+                color = GetColor(100, 160, 100);
+                break;
+
+            default:
+                break;
+            }
+
+            DrawCircle(
+                centerX,
+                centerY,
+                static_cast<int>(GameConfig::SlimeRadius),
+                color,
+                TRUE
+            );
+
+            // スライムの向きを示す目印。
+            DrawCircle(
+                centerX + slime.Facing() * 14,
+                centerY - 10,
+                5,
+                white,
+                TRUE
+            );
+
+            DrawFormatString(
+                static_cast<int>(bounds.x) - 20,
+                static_cast<int>(bounds.y) - 50,
+                white,
+                "Lv.%d HP %d/%d",
+                slime.Level(),
+                slime.Hp(),
+                slime.MaxHp()
+            );
+
+            DrawString(
+                static_cast<int>(bounds.x) - 20,
+                static_cast<int>(bounds.y) - 25,
+                stateText,
+                white
+            );
+        }
+
+        // 撃破直後も一定時間はダメージ数値を表示する。
+        if (slime.ShowsDamage())
+        {
+            DrawFormatString(
+                centerX,
+                static_cast<int>(bounds.y) - 80,
+                GetColor(255, 230, 80),
+                "-%d",
+                slime.LastDamage()
+            );
+        }
     }
 
     // 操作説明。
     DrawString(
         40, 30,
-        "STEP 2: A・D 移動 / Space ジャンプ / 左クリック 攻撃",
+        "STEP 3: A・D 移動 / Space ジャンプ / 左クリック 攻撃",
         white
     );
 
@@ -308,11 +398,11 @@ void SceneManager::Draw() const
 
     DrawString(
         40, 100,
-        "緑の標的に触れると被ダメージ。敵AIは未実装です。",
+        "黄: 予備動作 / 赤: 飛び込み / くすんだ緑: 着地後の隙",
         white
     );
 
-    // HPゲージの背景。
+    // HPゲージ。
     DrawBox(
         40, 145,
         340, 170,
@@ -320,7 +410,6 @@ void SceneManager::Draw() const
         TRUE
     );
 
-    // 現在HPの割合に応じた緑色のゲージ。
     DrawBox(
         40, 145,
         40 + 300 * player_.Hp() / player_.MaxHp(),
@@ -346,12 +435,20 @@ void SceneManager::Draw() const
             white
         );
     }
-    else if (!target_.IsAlive())
+    else if (defeatedCount_ == GameConfig::SlimeCount)
     {
         DrawString(
             700, 420,
-            "標的を倒しました。Rで再配置できます。",
+            "全スライムを撃破しました。Rで再挑戦できます。",
             white
         );
     }
+
+    DrawFormatString(
+        40, 220,
+        white,
+        "討伐数 %d / %d",
+        defeatedCount_,
+        GameConfig::SlimeCount
+    );
 }

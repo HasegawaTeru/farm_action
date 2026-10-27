@@ -1,11 +1,15 @@
 #pragma once
 
 #include "Player.h"
-#include "TrainingTarget.h"
+#include "Slime.h"
+#include "GameConfig.h"
+
+#include <array>
 
 class Input;
 
-// 現段階ではタイトルと動作確認ステージを管理する。
+// 現段階はタイトルと動作確認ステージのみ。
+// 町はSTEP 5で追加する。
 class SceneManager
 {
 public:
@@ -30,10 +34,12 @@ private:
     Scene scene_ = Scene::Title;
 
     Player player_;
-    TrainingTarget target_;
+
+    std::array<Slime, GameConfig::SlimeCount> slimes_;
+
+    int defeatedCount_ = 0;
 
     bool showAttackBounds_ = true;
-
     bool quit_ = false;
     bool showSettings_ = false;
 };
