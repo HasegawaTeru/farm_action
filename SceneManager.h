@@ -21,7 +21,6 @@ public:
         return quit_;
     }
 
-    // デバッグ・検証用の読み取り専用参照。
     const GameSession& State() const
     {
         return session_;
@@ -47,6 +46,8 @@ private:
     void UpdateMenu(const Input& input);
 
     void DrawTitle() const;
+    void DrawResult() const;
+    void DrawBoss() const;
     void DrawTown() const;
     void DrawStage() const;
     void DrawHud() const;
@@ -57,10 +58,11 @@ private:
     Menu menu_ = Menu::None;
 
     FoodInventory selection_;
-
     Dish selectedDish_ = Dish::Jelly;
 
     bool foodCategory_ = false;
+
+    float resultTime_ = 0.0f;
 
     bool title_ = true;
     bool quit_ = false;

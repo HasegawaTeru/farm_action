@@ -70,6 +70,8 @@ public:
         return noticeQuantity_;
     }
 
+    int GrantReward(Ingredient item, int quantity);
+
 private:
     int Collect(Ingredient item, int quantity);
 

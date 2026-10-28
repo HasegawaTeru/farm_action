@@ -59,6 +59,8 @@ public:
     Rect Bounds() const;
     Rect AttackBounds() const;
 
+    void ConstrainX(float left, float right);
+
 private:
     float x_ = 0.0f;
     float y_ = 0.0f;

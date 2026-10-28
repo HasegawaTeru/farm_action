@@ -244,3 +244,14 @@ bool Player::ApplyJumpBuff(float multiplier, float seconds)
 
     return true;
 }
+
+void Player::ConstrainX(float left, float right)
+{
+    x_ = std::max(
+        left,
+        std::min(
+            x_,
+            right - GameConfig::PlayerWidth
+        )
+    );
+}

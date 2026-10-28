@@ -1,5 +1,6 @@
 #include "GameSession.h"
 #include "CombatMotion.h"
+#include "StageRules.h"
 
 #include <algorithm>
 
@@ -20,8 +21,8 @@ void GameSession::NewGame()
 
     stageItems_.Discard();
 
-    // 正式なクリア実装前でも、最初の料理を試せるようにする。
-    for (int i = 0; i < ItemSettings::IngredientCount; ++i)
+    // 初回の調理用。ボス専用食材は配布しない。
+    for (int i = 0; i < 2; ++i)
     {
         ingredients_.Add(
             static_cast<Ingredient>(i),
@@ -39,6 +40,11 @@ void GameSession::NewGame()
     inStage_ = false;
     paused_ = false;
     defeatedCount_ = 0;
+    pendingExp_ = 0;
+    arenaLocked_ = false;
+    inResult_ = false;
+
+    result_ = {};
 
     Message(
         "最初の料理用に食材を各2個用意しました。調理場へ行ってみましょう。"
@@ -49,6 +55,7 @@ CookResult GameSession::Cook(Dish dish)
 {
     const bool atKitchen =
         !inStage_
+        && !inResult_
         && town_.NearbyFacility() == Town::Facility::Kitchen;
 
     const CookResult result = CookingManager::Craft(
@@ -93,6 +100,7 @@ bool GameSession::StartStage(
     const FoodInventory& selection)
 {
     if (inStage_
+        || inResult_
         || town_.NearbyFacility() != Town::Facility::Board
         || selection.Total() > CookingSettings::CarryLimit)
     {
@@ -122,13 +130,22 @@ bool GameSession::StartStage(
     for (int i = 0; i < GameConfig::SlimeCount; ++i)
     {
         slimes_[i].Init(
-            GameConfig::SlimeSpawnX[i],
+            StageRules::NormalSpawnX[i],
             GameConfig::StageBaseLevel,
             progress_.Level()
         );
     }
 
+    boss_.Init(
+        GameConfig::StageBaseLevel,
+        progress_.Level()
+    );
+
+    pendingExp_ = 0;
+    arenaLocked_ = false;
     defeatedCount_ = 0;
+
+    result_ = {};
 
     inStage_ = true;
     paused_ = false;
@@ -138,38 +155,98 @@ bool GameSession::StartStage(
     return true;
 }
 
-void GameSession::LeaveStage(bool defeated)
+bool GameSession::FinishStage(StageEndReason reason)
 {
+    // 終了済みの挑戦から二重に報酬を取得させない。
     if (!inStage_)
     {
-        return;
+        return false;
     }
 
-    stageItems_.Discard();
-
-    // 死亡では料理を復元する。
-    // リタイアでは食べた分の消費を維持する。
-    if (defeated)
+    if (reason == StageEndReason::Clear)
     {
-        foods_ = beforeStageFoods_;
+        if (!arenaLocked_ || boss_.IsAlive())
+        {
+            return false;
+        }
+
+        StageResult completed;
+
+        completed.ingredients = stageItems_.Pending();
+        completed.exp = pendingExp_;
+        completed.defeated = defeatedCount_;
+
+        completed.oldLevel = progress_.Level();
+        completed.oldExp = progress_.Exp();
+
+        // 食材を確定できなければEXPも状態も変更しない。
+        if (!stageItems_.CommitTo(ingredients_))
+        {
+            return false;
+        }
+
+        progress_.AddExp(pendingExp_);
+
+        completed.newLevel = progress_.Level();
+        completed.newExp = progress_.Exp();
+
+        result_ = completed;
+        inResult_ = true;
+    }
+    else
+    {
+        stageItems_.Discard();
+
+        // 死亡時のみ、料理を開始前へ復元する。
+        if (reason == StageEndReason::Defeat)
+        {
+            foods_ = beforeStageFoods_;
+        }
+
+        player_.Init(
+            progress_.MaxHp(),
+            progress_.AttackPower()
+        );
+
+        town_.Init(
+            reason == StageEndReason::Defeat
+        );
+
+        Message(
+            reason == StageEndReason::Defeat
+            ? "悪い夢を見た……。自宅へ戻りました。"
+            : "町へ帰りました。今回の食材とEXPは失われました。"
+        );
     }
 
     carried_.Clear();
 
+    pendingExp_ = 0;
+    arenaLocked_ = false;
     inStage_ = false;
     paused_ = false;
+
+    return true;
+}
+
+void GameSession::ConfirmResult()
+{
+    if (!inResult_)
+    {
+        return;
+    }
+
+    inResult_ = false;
 
     player_.Init(
         progress_.MaxHp(),
         progress_.AttackPower()
     );
 
-    town_.Init(defeated);
+    town_.Init(false);
 
     Message(
-        defeated
-        ? "悪い夢を見た……。自宅へ戻りました。"
-        : "町へ帰りました。今回の食材は失われました。"
+        "ステージクリア！ 食材とEXPを持ち帰りました。"
     );
 }
 
@@ -205,6 +282,7 @@ bool GameSession::Eat(Dish dish)
 void GameSession::Rest()
 {
     if (inStage_
+        || inResult_
         || town_.NearbyFacility() != Town::Facility::House)
     {
         return;
@@ -225,8 +303,8 @@ void GameSession::Update(
     bool attack,
     bool gather)
 {
-    // メニュー中は全ゲーム内時間を止める。
-    if (paused_ || seconds <= 0.0f)
+    // メニュー中とリザルト中は通常更新を止める。
+    if (paused_ || inResult_ || seconds <= 0.0f)
     {
         return;
     }
@@ -254,6 +332,21 @@ void GameSession::Update(
         attack
     );
 
+    // ボスエリアに入ったら入口を封鎖する。
+    if (player_.X() >= StageRules::ArenaLeft)
+    {
+        arenaLocked_ = true;
+    }
+
+    if (arenaLocked_)
+    {
+        player_.ConstrainX(
+            StageRules::ArenaLeft,
+            StageRules::ArenaRight
+        );
+    }
+
+    // 通常敵。
     for (int i = 0; i < GameConfig::SlimeCount; ++i)
     {
         Slime& slime = slimes_[i];
@@ -267,6 +360,9 @@ void GameSession::Update(
         if (alive && !slime.IsAlive())
         {
             ++defeatedCount_;
+
+            pendingExp_ +=
+                2 + (slime.Level() - 1) / 2;
 
             stageItems_.DropSlimeLoot(
                 static_cast<unsigned int>(i),
@@ -292,6 +388,45 @@ void GameSession::Update(
         }
     }
 
+    // ボスはエリア封鎖後に行動を開始する。
+    if (arenaLocked_)
+    {
+        boss_.Update(seconds, player_);
+
+        const bool alive = boss_.IsAlive();
+
+        boss_.TryHit(player_);
+
+        if (alive && !boss_.IsAlive())
+        {
+            ++defeatedCount_;
+
+            pendingExp_ += StageRules::BossExp;
+
+            stageItems_.GrantReward(
+                Ingredient::BossJelly,
+                StageRules::BossIngredientCount
+            );
+        }
+
+        if (boss_.IsAlive()
+            && boss_.Intersects(player_.Bounds()))
+        {
+            const Rect bounds = boss_.Bounds();
+
+            const int direction =
+                player_.X() + GameConfig::PlayerWidth * 0.5f
+                < bounds.x + bounds.width * 0.5f
+                ? -1
+                : 1;
+
+            player_.TakeDamage(
+                boss_.AttackPower(),
+                direction
+            );
+        }
+    }
+
     if (!player_.IsAlive())
     {
         LeaveStage(true);
@@ -304,4 +439,9 @@ void GameSession::Update(
         true,
         gather
     );
+
+    if (arenaLocked_ && !boss_.IsAlive())
+    {
+        FinishStage(StageEndReason::Clear);
+    }
 }

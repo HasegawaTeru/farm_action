@@ -309,3 +309,12 @@ void StageItems::Update(
         );
     }
 }
+
+int StageItems::GrantReward(
+    Ingredient item,
+    int quantity)
+{
+    return active_
+        ? Collect(item, quantity)
+        : 0;
+}

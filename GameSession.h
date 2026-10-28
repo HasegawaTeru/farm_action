@@ -6,12 +6,12 @@
 #include "CookingManager.h"
 #include "Town.h"
 #include "GameConfig.h"
+#include "BossSlime.h"
+#include "StageResult.h"
 
 #include <array>
 #include <string>
 
-// 持ち物・進行状態・プレイ中の状態を管理する。
-// 入力APIと描画APIには依存しない。
 class GameSession
 {
 public:
@@ -33,7 +33,33 @@ public:
     CookResult Cook(Dish dish);
 
     bool StartStage(const FoodInventory& selection);
-    void LeaveStage(bool defeated);
+
+    void LeaveStage(bool defeated)
+    {
+        FinishStage(
+            defeated
+            ? StageEndReason::Defeat
+            : StageEndReason::Retire
+        );
+    }
+
+    bool FinishStage(StageEndReason reason);
+    void ConfirmResult();
+
+    bool InResult() const { return inResult_; }
+    bool ArenaLocked() const { return arenaLocked_; }
+
+    int PendingExp() const { return pendingExp_; }
+
+    const BossSlime& Boss() const
+    {
+        return boss_;
+    }
+
+    const StageResult& Result() const
+    {
+        return result_;
+    }
 
     bool Eat(Dish dish);
     void Rest();
@@ -120,6 +146,13 @@ private:
 
     int defeatedCount_ = 0;
 
+    BossSlime boss_;
+    StageResult result_;
+
+    int pendingExp_ = 0;
+
+    bool arenaLocked_ = false;
+    bool inResult_ = false;
     bool inStage_ = false;
     bool paused_ = false;
 

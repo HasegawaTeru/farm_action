@@ -19,6 +19,8 @@ namespace
 
 void SceneManager::Init()
 {
+    resultTime_ = 0.0f;
+
     title_ = true;
     quit_ = false;
 
@@ -62,6 +64,30 @@ void SceneManager::Update(
         return;
     }
 
+    // リザルト中は閉じる操作と表示演出だけ更新する。
+    if (session_.InResult())
+    {
+        const float elapsed =
+            seconds < 0.0f
+            ? 0.0f
+            : (
+                seconds > GameConfig::MaxFrameSeconds
+                ? GameConfig::MaxFrameSeconds
+                : seconds
+                );
+
+        resultTime_ += elapsed;
+
+        if (input.IsPressed(KEY_INPUT_RETURN)
+            || input.IsPressed(KEY_INPUT_ESCAPE)
+            || Clicked(input, UIConfig::Button(5)))
+        {
+            session_.ConfirmResult();
+        }
+
+        return;
+    }
+
     if (input.IsPressed(KEY_INPUT_ESCAPE)
         && menu_ == Menu::None)
     {
@@ -97,6 +123,14 @@ void SceneManager::Update(
         input.IsPressed(KEY_INPUT_E)
     );
 
+    // クリアしたフレームでは施設操作などを行わない。
+    if (session_.InResult())
+    {
+        resultTime_ = 0.0f;
+        menu_ = Menu::None;
+        return;
+    }
+
     if (!session_.InStage()
         && input.IsPressed(KEY_INPUT_E))
     {
@@ -121,145 +155,28 @@ void SceneManager::Update(
 
         session_.SetPaused(menu_ != Menu::None);
     }
-}
 
-void SceneManager::UpdateMenu(const Input& input)
-{
-    if (input.IsPressed(KEY_INPUT_ESCAPE)
-        || Clicked(input, UIConfig::Button(5)))
+    if (session_.InResult())
     {
-        if (menu_ == Menu::Inventory
-            || (menu_ == Menu::Settings && !title_))
+        const float elapsed =
+            seconds < 0
+            ? 0
+            : (
+                seconds > GameConfig::MaxFrameSeconds
+                ? GameConfig::MaxFrameSeconds
+                : seconds
+                );
+
+        resultTime_ += elapsed;
+
+        if (input.IsPressed(KEY_INPUT_RETURN)
+            || input.IsPressed(KEY_INPUT_ESCAPE)
+            || Clicked(input, UIConfig::Button(5)))
         {
-            menu_ = Menu::Pause;
-        }
-        else
-        {
-            menu_ = Menu::None;
+            session_.ConfirmResult();
         }
 
         return;
-    }
-
-    switch (menu_)
-    {
-    case Menu::Pause:
-    {
-        if (Clicked(input, UIConfig::Button(0)))
-        {
-            menu_ = Menu::Settings;
-        }
-        else if (Clicked(input, UIConfig::Button(1)))
-        {
-            foodCategory_ = false;
-            selectedDish_ = Dish::Jelly;
-
-            menu_ = Menu::Inventory;
-        }
-        else if (Clicked(input, UIConfig::Button(2)))
-        {
-            if (session_.InStage())
-            {
-                session_.LeaveStage(false);
-            }
-            else
-            {
-                title_ = true;
-            }
-
-            menu_ = Menu::None;
-        }
-
-        break;
-    }
-
-    case Menu::Inventory:
-    {
-        if (Clicked(input, UIConfig::Tab(0)))
-        {
-            foodCategory_ = false;
-        }
-
-        if (Clicked(input, UIConfig::Tab(1)))
-        {
-            foodCategory_ = true;
-        }
-
-        if (foodCategory_)
-        {
-            for (int i = 0; i < CookingSettings::DishCount; ++i)
-            {
-                if (Clicked(input, UIConfig::FoodRow(i)))
-                {
-                    selectedDish_ = static_cast<Dish>(i);
-                }
-            }
-
-            if (input.IsPressed(KEY_INPUT_F)
-                && session_.Eat(selectedDish_))
-            {
-                // 成功した場合だけメニューを閉じる。
-                menu_ = Menu::None;
-            }
-        }
-
-        break;
-    }
-
-    case Menu::Kitchen:
-    {
-        for (int i = 0; i < CookingSettings::DishCount; ++i)
-        {
-            if (Clicked(input, UIConfig::Button(i)))
-            {
-                session_.Cook(static_cast<Dish>(i));
-            }
-        }
-
-        break;
-    }
-
-    case Menu::Board:
-    {
-        for (int i = 0; i < CookingSettings::DishCount; ++i)
-        {
-            const Dish dish = static_cast<Dish>(i);
-
-            if (Clicked(input, UIConfig::Minus(i)))
-            {
-                selection_.Remove(dish, 1);
-            }
-
-            if (Clicked(input, UIConfig::Plus(i))
-                && selection_.Total() < CookingSettings::CarryLimit
-                && selection_.Count(dish)
-                < session_.Foods().Count(dish))
-            {
-                selection_.Add(dish, 1);
-            }
-        }
-
-        if (Clicked(input, UIConfig::Button(4))
-            && session_.StartStage(selection_))
-        {
-            menu_ = Menu::None;
-        }
-
-        break;
-    }
-
-    case Menu::House:
-    {
-        if (Clicked(input, UIConfig::Button(0)))
-        {
-            session_.Rest();
-        }
-
-        break;
-    }
-
-    default:
-        break;
     }
 }
 
@@ -268,6 +185,10 @@ void SceneManager::Draw() const
     if (title_)
     {
         DrawTitle();
+    }
+    else if (session_.InResult())
+    {
+        DrawResult();
     }
     else
     {

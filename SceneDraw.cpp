@@ -465,12 +465,15 @@ void SceneManager::DrawStage() const
         );
     }
 
+    DrawBoss();
+
     DrawFormatString(
-        40, 320,
+        40, 350,
         white,
-        "討伐 %d / %d",
+        "討伐 %d / %d   今回EXP +%d",
         session_.DefeatedCount(),
-        GameConfig::SlimeCount
+        GameConfig::SlimeCount + 1,
+        session_.PendingExp()
     );
 
     if (session_.Items().HasNotice())
@@ -487,11 +490,12 @@ void SceneManager::DrawStage() const
         );
     }
 
-    if (session_.DefeatedCount() == GameConfig::SlimeCount)
+    if (session_.DefeatedCount() == GameConfig::SlimeCount
+        && !session_.ArenaLocked())
     {
         DrawString(
             700, 420,
-            "全スライムを撃破！探索後はESCから町へ戻れます。",
+            "通常の敵を撃破！ 右へ進んで大スライムを倒しましょう。",
             white
         );
     }

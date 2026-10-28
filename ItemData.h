@@ -2,15 +2,14 @@
 
 #include "Collision.h"
 
-// 食材ID。
 enum class Ingredient
 {
     SlimeJelly,
     Herb,
+    BossJelly,
     Count
 };
 
-// 食材の表示名。
 inline const char* IngredientName(Ingredient item)
 {
     switch (item)
@@ -20,6 +19,9 @@ inline const char* IngredientName(Ingredient item)
 
     case Ingredient::Herb:
         return "香草";
+
+    case Ingredient::BossJelly:
+        return "大スライムゼリー";
 
     default:
         return "不明な食材";
