@@ -1,47 +1,12 @@
 #include "SceneManager.h"
+#include "UIHelpers.h"
 #include "UIConfig.h"
 #include "DxLib.h"
 
 namespace
 {
-    void Box(
-        const Rect& rect,
-        unsigned int color,
-        bool fill = true)
-    {
-        DrawBox(
-            static_cast<int>(rect.x),
-            static_cast<int>(rect.y),
-            static_cast<int>(rect.x + rect.width),
-            static_cast<int>(rect.y + rect.height),
-            color,
-            fill ? TRUE : FALSE
-        );
-    }
-
-    void Button(
-        const Rect& rect,
-        const char* text,
-        bool selected = false)
-    {
-        Box(rect, GetColor(55, 65, 85));
-
-        if (selected)
-        {
-            Box(
-                rect,
-                GetColor(255, 220, 60),
-                false
-            );
-        }
-
-        DrawString(
-            static_cast<int>(rect.x) + 15,
-            static_cast<int>(rect.y) + 18,
-            text,
-            GetColor(255, 255, 255)
-        );
-    }
+    using UI::Box;
+    using UI::Button;
 }
 
 void SceneManager::DrawTitle() const
@@ -216,6 +181,8 @@ void SceneManager::DrawTown() const
 
 void SceneManager::DrawStage() const
 {
+    const char* stateText = slime.StateName();
+
     const unsigned int white =
         GetColor(255, 255, 255);
 

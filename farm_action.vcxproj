@@ -139,6 +139,7 @@
     <ClInclude Include="Collision.h" />
     <ClInclude Include="CombatMotion.h" />
     <ClInclude Include="CookingManager.h" />
+    <ClInclude Include="DebugView.h" />
     <ClInclude Include="Enemy.h" />
     <ClInclude Include="GameConfig.h" />
     <ClInclude Include="GameSession.h" />
@@ -156,11 +157,13 @@
     <ClInclude Include="Town.h" />
     <ClInclude Include="TrainingTarget.h" />
     <ClInclude Include="UIConfig.h" />
+    <ClInclude Include="UIHelpers.h" />
     <ClInclude Include="WinMain.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BossSlime.cpp" />
     <ClCompile Include="CookingManager.cpp" />
+    <ClCompile Include="DebugView.cpp" />
     <ClCompile Include="Enemy.cpp" />
     <ClCompile Include="GameSession.cpp" />
     <ClCompile Include="Input.cpp" />
@@ -170,11 +173,13 @@
     <ClCompile Include="RecipeData.cpp" />
     <ClCompile Include="SceneDraw.cpp" />
     <ClCompile Include="SceneManager.cpp" />
+    <ClCompile Include="SceneMenu.cpp" />
     <ClCompile Include="Slime.cpp" />
     <ClCompile Include="StageEndDraw.cpp" />
     <ClCompile Include="StageItems.cpp" />
     <ClCompile Include="Town.cpp" />
     <ClCompile Include="TrainingTarget.cpp" />
+    <ClCompile Include="UIHelpers.cpp" />
     <ClCompile Include="WinMain.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

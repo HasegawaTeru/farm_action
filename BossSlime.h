@@ -32,6 +32,8 @@ public:
         return IsAlive() ? state_ : State::Dead;
     }
 
+    const char* StateName() const;
+
 private:
     State state_ = State::Windup;
 

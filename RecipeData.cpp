@@ -27,6 +27,12 @@ const Recipe* FindRecipe(Dish dish)
         }
     };
 
+    static_assert(
+        sizeof(recipes) / sizeof(recipes[0])
+        == CookingSettings::DishCount,
+        "Every dish must have a recipe."
+        );
+
     for (const Recipe& recipe : recipes)
     {
         if (recipe.dish == dish)

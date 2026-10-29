@@ -1,4 +1,5 @@
 #pragma once
+#include "GameConfig.h"
 
 namespace StageRules
 {
@@ -9,6 +10,12 @@ namespace StageRules
         950.0f,
         1200.0f
     };
+
+    static_assert(
+        sizeof(NormalSpawnX) / sizeof(NormalSpawnX[0])
+        == GameConfig::SlimeCount,
+        "NormalSpawnX must contain one spawn for every slime."
+        );
 
     const float ArenaLeft = 1400.0f;
     const float ArenaRight = 1920.0f;

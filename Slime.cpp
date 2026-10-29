@@ -234,3 +234,26 @@ bool Slime::Intersects(const Rect& rect) const
         GameConfig::SlimeRadius
     );
 }
+
+const char* Slime::StateName() const
+{
+    switch (CurrentState())
+    {
+    case State::Idle:
+        return "待機・巡回";
+
+    case State::Windup:
+        return "予備動作";
+
+    case State::Jumping:
+        return "飛び込み";
+
+    case State::Recovery:
+        return "着地後の隙";
+
+    case State::Dead:
+        return "撃破";
+    }
+
+    return "不明";
+}

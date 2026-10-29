@@ -15,6 +15,18 @@
 class GameSession
 {
 public:
+    enum class Scene
+    {
+        Town,
+        Stage,
+        Result
+    };
+
+    Scene CurrentScene() const
+    {
+        return scene_;
+    }
+
     void NewGame();
 
     void SetPaused(bool paused)
@@ -46,10 +58,25 @@ public:
     bool FinishStage(StageEndReason reason);
     void ConfirmResult();
 
-    bool InResult() const { return inResult_; }
-    bool ArenaLocked() const { return arenaLocked_; }
+    bool InResult() const
+    {
+        return scene_ == Scene::Result;
+    }
 
-    int PendingExp() const { return pendingExp_; }
+    bool InStage() const
+    {
+        return scene_ == Scene::Stage;
+    }
+
+    bool ArenaLocked() const
+    {
+        return arenaLocked_;
+    }
+
+    int PendingExp() const
+    {
+        return pendingExp_;
+    }
 
     const BossSlime& Boss() const
     {
@@ -63,11 +90,6 @@ public:
 
     bool Eat(Dish dish);
     void Rest();
-
-    bool InStage() const
-    {
-        return inStage_;
-    }
 
     const Player& Actor() const
     {
@@ -127,6 +149,16 @@ public:
 private:
     void Message(const std::string& text);
 
+    void UpdateStage(
+        float seconds,
+        int horizontal,
+        bool jump,
+        bool attack,
+        bool gather
+    );
+
+    bool ResolveCombat(Enemy& enemy);
+
     Player player_;
     Town town_;
     Progression progress_;
@@ -152,8 +184,7 @@ private:
     int pendingExp_ = 0;
 
     bool arenaLocked_ = false;
-    bool inResult_ = false;
-    bool inStage_ = false;
+    Scene scene_ = Scene::Town;
     bool paused_ = false;
 
     std::string message_;

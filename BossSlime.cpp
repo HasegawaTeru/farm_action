@@ -165,3 +165,23 @@ bool BossSlime::Intersects(const Rect& rect) const
         StageRules::BossRadius
     );
 }
+
+const char* BossSlime::StateName() const
+{
+    switch (CurrentState())
+    {
+    case State::Windup:
+        return "—\”õ“®ì";
+
+    case State::Jumping:
+        return "”ò‚Ñ‚İ";
+
+    case State::Recovery:
+        return "’…’nŒã‚ÌŒ„";
+
+    case State::Dead:
+        return "Œ‚”j";
+    }
+
+    return "•s–¾";
+}

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "GameSession.h"
+#include "DebugView.h"
 
 class Input;
 
@@ -15,6 +16,11 @@ public:
     );
 
     void Draw() const;
+
+    bool DebugVisible() const
+    {
+        return debug_.Enabled();
+    }
 
     bool ShouldQuit() const
     {
@@ -54,6 +60,7 @@ private:
     void DrawMenu() const;
 
     GameSession session_;
+    DebugView debug_;
 
     Menu menu_ = Menu::None;
 

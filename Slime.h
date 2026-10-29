@@ -39,6 +39,8 @@ public:
         return facing_;
     }
 
+    const char* StateName() const;
+
 private:
     bool Detects(const Player& player) const;
     void BeginWindup();

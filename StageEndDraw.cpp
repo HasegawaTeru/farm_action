@@ -1,6 +1,7 @@
 #include "SceneManager.h"
 #include "StageRules.h"
 #include "UIConfig.h"
+#include "UIHelpers.h"
 #include "DxLib.h"
 
 void SceneManager::DrawBoss() const
@@ -162,9 +163,34 @@ void SceneManager::DrawResult() const
         );
     }
 
-    DrawString(
-        550, 750,
-        "町へ戻る（Enter / ESCでも戻れます）",
-        white
+    DrawFormatString(
+        520, 560,
+        white,
+        "Lv.%d → Lv.%d / EXP %d → %d",
+        result.oldLevel,
+        result.newLevel,
+        result.oldExp,
+        result.newExp
+    );
+
+    if (result.newLevel > result.oldLevel)
+    {
+        const unsigned int color =
+            static_cast<int>(resultTime_ * 3) % 2 == 0
+            ? GetColor(255, 220, 60)
+            : white;
+
+        DrawFormatString(
+            520, 610,
+            color,
+            "LEVEL UP! 最大HP +%d / 攻撃力 +%d",
+            (result.newLevel - result.oldLevel) * 3,
+            (result.newLevel - result.oldLevel) * 2
+        );
+    }
+
+    UI::Button(
+        UIConfig::Button(5),
+        "町へ戻る（Enter / ESCでも戻れます）"
     );
 }
