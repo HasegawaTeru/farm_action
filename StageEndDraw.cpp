@@ -8,8 +8,7 @@ void SceneManager::DrawBoss() const
 {
     const BossSlime& boss = session_.Boss();
 
-    const unsigned int white =
-        GetColor(255, 255, 255);
+    const unsigned int white = GetColor(255, 255, 255);
 
     // ボスエリアの入口。
     if (session_.ArenaLocked())
@@ -80,7 +79,7 @@ void SceneManager::DrawBoss() const
         return;
     }
 
-    // 画面上部のボスHPゲージ。
+    // ボスHPゲージ。
     DrawString(
         520, 25,
         boss.Enraged()
@@ -118,8 +117,7 @@ void SceneManager::DrawResult() const
 {
     const StageResult& result = session_.Result();
 
-    const unsigned int white =
-        GetColor(255, 255, 255);
+    const unsigned int white = GetColor(255, 255, 255);
 
     DrawBox(
         400, 180,

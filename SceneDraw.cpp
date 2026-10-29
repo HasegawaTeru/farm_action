@@ -11,14 +11,9 @@ namespace
 
 void SceneManager::DrawTitle() const
 {
-    const unsigned int white =
-        GetColor(255, 255, 255);
+    const unsigned int white = GetColor(255, 255, 255);
 
-    DrawString(
-        800, 240,
-        "料理アクション",
-        white
-    );
+    DrawString(800, 240, "料理アクション", white);
 
     Button(UIConfig::Button(0), "はじめから");
     Button(UIConfig::Button(1), "設定");
@@ -33,8 +28,7 @@ void SceneManager::DrawTitle() const
 
 void SceneManager::DrawTown() const
 {
-    const unsigned int white =
-        GetColor(255, 255, 255);
+    const unsigned int white = GetColor(255, 255, 255);
 
     const Town& town = session_.TownState();
     const float camera = town.CameraX();
@@ -83,9 +77,7 @@ void SceneManager::DrawTown() const
         {
             // 鍋を模した調理場。
             DrawCircle(
-                x,
-                830,
-                50,
+                x, 830, 50,
                 GetColor(75, 85, 100),
                 TRUE
             );
@@ -120,19 +112,13 @@ void SceneManager::DrawTown() const
             DrawLine(x + 50, 820, x + 50, 900, white);
         }
 
-        DrawString(
-            x - 70,
-            610,
-            names[i],
-            white
-        );
+        DrawString(x - 70, 610, names[i], white);
 
         if (town.NearbyFacility()
             == static_cast<Town::Facility>(i))
         {
             DrawString(
-                x - 50,
-                580,
+                x - 50, 580,
                 "Eで調べる",
                 white
             );
@@ -158,10 +144,8 @@ void SceneManager::DrawTown() const
         town.Facing() > 0 ? x + 48 : x + 8;
 
     DrawBox(
-        eye,
-        824,
-        eye + 8,
-        832,
+        eye, 824,
+        eye + 8, 832,
         white,
         TRUE
     );
@@ -174,17 +158,14 @@ void SceneManager::DrawTown() const
 
     DrawString(
         40, 250,
-        "家 → 調理場 → 掲示板の順に右へ進めます。",
+        "家 → 調理場 → 掲示板 / F2: デバッグ表示",
         white
     );
 }
 
 void SceneManager::DrawStage() const
 {
-    const char* stateText = slime.StateName();
-
-    const unsigned int white =
-        GetColor(255, 255, 255);
+    const unsigned int white = GetColor(255, 255, 255);
 
     // 地面。
     DrawBox(
@@ -197,8 +178,7 @@ void SceneManager::DrawStage() const
     );
 
     // 落ちている食材。
-    for (const IngredientDrop& drop
-        : session_.Items().Drops())
+    for (const IngredientDrop& drop : session_.Items().Drops())
     {
         const Rect& bounds = drop.bounds;
 
@@ -289,7 +269,6 @@ void SceneManager::DrawStage() const
             TRUE
         );
 
-        // 向きを示す目印。
         const int eyeX =
             session_.Actor().Facing() > 0
             ? x + 48
@@ -337,7 +316,8 @@ void SceneManager::DrawStage() const
 
         if (slime.IsAlive())
         {
-            const char* stateText = "待機・巡回";
+            // slimeは、このループの中で参照する。
+            const char* stateText = slime.StateName();
 
             unsigned int color =
                 GetColor(50, 190, 80);
@@ -345,17 +325,14 @@ void SceneManager::DrawStage() const
             switch (slime.CurrentState())
             {
             case Slime::State::Windup:
-                stateText = "予備動作";
                 color = GetColor(240, 190, 40);
                 break;
 
             case Slime::State::Jumping:
-                stateText = "飛び込み";
                 color = GetColor(240, 80, 50);
                 break;
 
             case Slime::State::Recovery:
-                stateText = "着地後の隙";
                 color = GetColor(100, 160, 100);
                 break;
 
@@ -470,8 +447,7 @@ void SceneManager::DrawStage() const
 
 void SceneManager::DrawHud() const
 {
-    const unsigned int white =
-        GetColor(255, 255, 255);
+    const unsigned int white = GetColor(255, 255, 255);
 
     const Player& player = session_.Actor();
 
@@ -485,13 +461,11 @@ void SceneManager::DrawHud() const
         player.AttackPower()
     );
 
-    // HPゲージの背景。
     Box(
         { 40, 65, 300, 25 },
         GetColor(60, 60, 60)
     );
 
-    // 現在HP。
     Box(
         {
             40,
@@ -532,10 +506,8 @@ void SceneManager::DrawHud() const
 
 void SceneManager::DrawMenu() const
 {
-    const unsigned int white =
-        GetColor(255, 255, 255);
+    const unsigned int white = GetColor(255, 255, 255);
 
-    // メニュー背景。
     Box(
         { 400, 200, 1120, 720 },
         GetColor(25, 30, 45)
@@ -588,7 +560,7 @@ void SceneManager::DrawMenu() const
 
         DrawString(
             520, 460,
-            "E: 調べる・採取  ESC: メニュー  F: 選択した料理を食べる",
+            "E: 調べる・採取  ESC: メニュー  F: 料理  F1: 攻撃範囲  F2: デバッグ",
             white
         );
 
@@ -597,11 +569,7 @@ void SceneManager::DrawMenu() const
 
     case Menu::House:
     {
-        DrawString(
-            440, 285,
-            "主人公の家",
-            white
-        );
+        DrawString(440, 285, "主人公の家", white);
 
         Button(UIConfig::Button(0), "休む");
 
@@ -666,8 +634,7 @@ void SceneManager::DrawMenu() const
             const Dish dish =
                 static_cast<Dish>(i);
 
-            const Rect row =
-                UIConfig::FoodRow(i);
+            const Rect row = UIConfig::FoodRow(i);
 
             Button(
                 row,
@@ -729,8 +696,7 @@ void SceneManager::DrawMenu() const
                 const Ingredient item =
                     static_cast<Ingredient>(i);
 
-                const Rect row =
-                    UIConfig::FoodRow(i);
+                const Rect row = UIConfig::FoodRow(i);
 
                 Button(
                     row,
@@ -754,8 +720,7 @@ void SceneManager::DrawMenu() const
                 const Dish dish =
                     static_cast<Dish>(i);
 
-                const Rect row =
-                    UIConfig::FoodRow(i);
+                const Rect row = UIConfig::FoodRow(i);
 
                 Button(
                     row,

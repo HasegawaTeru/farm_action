@@ -177,6 +177,7 @@
     <ClCompile Include="Slime.cpp" />
     <ClCompile Include="StageEndDraw.cpp" />
     <ClCompile Include="StageItems.cpp" />
+    <ClCompile Include="StageSession.cpp" />
     <ClCompile Include="Town.cpp" />
     <ClCompile Include="TrainingTarget.cpp" />
     <ClCompile Include="UIHelpers.cpp" />
