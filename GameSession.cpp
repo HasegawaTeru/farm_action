@@ -9,8 +9,16 @@ void GameSession::Message(const std::string& text)
     messageRemaining_ = 4.0f;
 }
 
-void GameSession::NewGame()
+bool GameSession::NewGame(int slot)
 {
+    if (slot < 0 || slot >= SaveManager::SlotCount)
+    {
+        return false;
+    }
+
+    activeSlot_ = slot;
+    stageCleared_ = false;
+
     progress_.Init();
 
     ingredients_.Clear();
@@ -20,7 +28,6 @@ void GameSession::NewGame()
 
     stageItems_.Discard();
 
-    // 食材IDの並び順に依存させない。
     ingredients_.Add(
         Ingredient::SlimeJelly,
         CookingSettings::StarterIngredients
@@ -50,6 +57,8 @@ void GameSession::NewGame()
     Message(
         "最初の料理用に食材を各2個用意しました。調理場へ行ってみましょう。"
     );
+
+    return true;
 }
 
 CookResult GameSession::Cook(Dish dish)

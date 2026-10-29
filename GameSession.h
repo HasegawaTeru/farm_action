@@ -8,6 +8,7 @@
 #include "GameConfig.h"
 #include "BossSlime.h"
 #include "StageResult.h"
+#include "SaveManager.h"
 
 #include <array>
 #include <string>
@@ -27,7 +28,36 @@ public:
         return scene_;
     }
 
-    void NewGame();
+    bool NewGame(int slot = 0);
+
+    void ConfigureSaveDirectory(
+        const std::wstring& directory)
+    {
+        saves_.Configure(directory);
+    }
+
+    SaveSlotInfo InspectSlot(int slot) const
+    {
+        return saves_.Inspect(slot);
+    }
+
+    SaveResult SaveAtHome(int slot);
+    bool LoadSlot(int slot);
+
+    int ActiveSlot() const
+    {
+        return activeSlot_;
+    }
+
+    SaveResult LastSaveResult() const
+    {
+        return lastSave_;
+    }
+
+    bool StageCleared() const
+    {
+        return stageCleared_;
+    }
 
     void SetPaused(bool paused)
     {
@@ -189,4 +219,15 @@ private:
 
     std::string message_;
     float messageRemaining_ = 0.0f;
+
+    SaveData CaptureSave() const;
+    void AutoSave();
+
+    SaveManager saves_;
+
+    int activeSlot_ = 0;
+    bool stageCleared_ = false;
+
+    SaveResult lastSave_ =
+        SaveResult::NotConfigured;
 };

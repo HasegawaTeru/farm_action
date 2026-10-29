@@ -4,6 +4,7 @@
 #include "GameConfig.h"
 #include "Input.h"
 #include "SceneManager.h"
+#include "SavePath.h"
 
 #include "DxLib.h"
 
@@ -37,7 +38,7 @@ int WINAPI WinMain(
     Input input;
     SceneManager scenes;
 
-    scenes.Init();
+    scenes.Init(DefaultSaveDirectory());
 
     // CPUŠÔ‚Å‚Í‚È‚­ÀÛ‚ÌŒo‰ßŠÔ‚ğg‚¤B
     typedef std::chrono::steady_clock Clock;

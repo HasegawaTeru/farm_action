@@ -4,9 +4,14 @@
 #include "UIHelpers.h"
 #include "DxLib.h"
 
-void SceneManager::Init()
+void SceneManager::Init(
+    const std::wstring& saveDirectory)
 {
+    session_.ConfigureSaveDirectory(saveDirectory);
+    saveMenuMessage_.clear();
+
     debug_.Init();
+
     resultTime_ = 0.0f;
 
     title_ = true;
@@ -26,7 +31,6 @@ void SceneManager::Update(
     const Input& input,
     float seconds)
 {
-    // 計測と切り替えは、メニュー中も受け付ける。
     debug_.Update(
         seconds,
         input.IsPressed(KEY_INPUT_F2)
@@ -43,14 +47,17 @@ void SceneManager::Update(
         if (input.IsPressed(KEY_INPUT_RETURN)
             || UI::Clicked(input, UIConfig::Button(0)))
         {
-            session_.NewGame();
-            title_ = false;
+            OpenSlots(SlotAction::NewGame);
         }
         else if (UI::Clicked(input, UIConfig::Button(1)))
         {
-            menu_ = Menu::Settings;
+            OpenSlots(SlotAction::Load);
         }
         else if (UI::Clicked(input, UIConfig::Button(2)))
+        {
+            menu_ = Menu::Settings;
+        }
+        else if (UI::Clicked(input, UIConfig::Button(3)))
         {
             quit_ = true;
         }
@@ -118,7 +125,7 @@ void SceneManager::Update(
 
     if (session_.InResult())
     {
-        resultTime_ = 0.0f;
+        resultTime_ = 0;
         menu_ = Menu::None;
         return;
     }

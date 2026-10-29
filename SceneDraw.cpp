@@ -11,13 +11,19 @@ namespace
 
 void SceneManager::DrawTitle() const
 {
-    const unsigned int white = GetColor(255, 255, 255);
+    const unsigned int white =
+        GetColor(255, 255, 255);
 
-    DrawString(800, 240, "料理アクション", white);
+    DrawString(
+        800, 240,
+        "料理アクション",
+        white
+    );
 
     Button(UIConfig::Button(0), "はじめから");
-    Button(UIConfig::Button(1), "設定");
-    Button(UIConfig::Button(2), "ゲーム終了");
+    Button(UIConfig::Button(1), "つづきから");
+    Button(UIConfig::Button(2), "設定");
+    Button(UIConfig::Button(3), "ゲーム終了");
 
     DrawString(
         520, 640,
@@ -523,6 +529,10 @@ void SceneManager::DrawMenu() const
 
     switch (menu_)
     {
+    case Menu::Slots:
+    case Menu::Overwrite:
+        DrawSaveMenu();
+        break;
     case Menu::Pause:
     {
         DrawString(
@@ -569,9 +579,21 @@ void SceneManager::DrawMenu() const
 
     case Menu::House:
     {
-        DrawString(440, 285, "主人公の家", white);
+        DrawString(
+            440, 285,
+            "主人公の家",
+            white
+        );
 
         Button(UIConfig::Button(0), "休む");
+        Button(UIConfig::Button(1), "セーブ");
+
+        DrawFormatString(
+            520, 550,
+            white,
+            "使用中: スロット%d / 町への帰還時にオートセーブ",
+            session_.ActiveSlot() + 1
+        );
 
         break;
     }

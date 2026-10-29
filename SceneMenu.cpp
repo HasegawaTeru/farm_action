@@ -6,6 +6,11 @@
 
 void SceneManager::UpdateMenu(const Input& input)
 {
+    if (UpdateSaveMenu(input))
+    {
+        return;
+    }
+
     if (input.IsPressed(KEY_INPUT_ESCAPE)
         || UI::Clicked(input, UIConfig::Button(5)))
     {
@@ -133,6 +138,10 @@ void SceneManager::UpdateMenu(const Input& input)
         if (UI::Clicked(input, UIConfig::Button(0)))
         {
             session_.Rest();
+        }
+        else if (UI::Clicked(input, UIConfig::Button(1)))
+        {
+            OpenSlots(SlotAction::Save);
         }
 
         break;

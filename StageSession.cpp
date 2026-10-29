@@ -61,7 +61,6 @@ bool GameSession::StartStage(
     return true;
 }
 
-// 終了理由に応じて確定・破棄・復元を行う。
 bool GameSession::FinishStage(StageEndReason reason)
 {
     if (!InStage())
@@ -97,6 +96,8 @@ bool GameSession::FinishStage(StageEndReason reason)
 
         result_ = completed;
         scene_ = Scene::Result;
+
+        stageCleared_ = true;
     }
     else
     {
@@ -131,10 +132,15 @@ bool GameSession::FinishStage(StageEndReason reason)
     arenaLocked_ = false;
     paused_ = false;
 
+    // クリアはリザルトを閉じるまで保存しない。
+    if (!InResult())
+    {
+        AutoSave();
+    }
+
     return true;
 }
 
-// リザルトを閉じて町へ戻る。
 void GameSession::ConfirmResult()
 {
     if (!InResult())
@@ -154,6 +160,8 @@ void GameSession::ConfirmResult()
     Message(
         "ステージクリア！ 食材とEXPを持ち帰りました。"
     );
+
+    AutoSave();
 }
 
 // 通常敵・ボスに共通の命中と接触ダメージ。
@@ -235,7 +243,7 @@ void GameSession::UpdateStage(
         }
     }
 
-    // ボス。
+    // ボス
     if (arenaLocked_)
     {
         boss_.Update(seconds, player_);

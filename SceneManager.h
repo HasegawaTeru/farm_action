@@ -8,7 +8,9 @@ class Input;
 class SceneManager
 {
 public:
-    void Init();
+    void Init(
+        const std::wstring& saveDirectory = L""
+    );
 
     void Update(
         const Input& input,
@@ -46,7 +48,9 @@ private:
         Inventory,
         Kitchen,
         Board,
-        House
+        House,
+        Slots,
+        Overwrite
     };
 
     void UpdateMenu(const Input& input);
@@ -74,4 +78,27 @@ private:
     bool title_ = true;
     bool quit_ = false;
     bool showAttackBounds_ = true;
+
+    enum class SlotAction
+    {
+        NewGame,
+        Load,
+        Save
+    };
+
+    void OpenSlots(SlotAction action);
+    void SelectSlot(int slot);
+    bool UpdateSaveMenu(const Input& input);
+    void DrawSaveMenu() const;
+
+    SlotAction slotAction_ = SlotAction::NewGame;
+
+    int pendingSlot_ = 0;
+
+    std::array<
+        SaveSlotInfo,
+        SaveManager::SlotCount
+    > slotInfo_{};
+
+    std::string saveMenuMessage_;
 };

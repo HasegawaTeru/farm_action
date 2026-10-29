@@ -13,6 +13,7 @@ public:
     int MaxHp() const;
     int AttackPower() const;
 
+    bool Restore(int level, int exp);
 private:
     int level_ = 1;
     int exp_ = 0;

@@ -149,6 +149,9 @@
     <ClInclude Include="Player.h" />
     <ClInclude Include="Progression.h" />
     <ClInclude Include="RecipeData.h" />
+    <ClInclude Include="SaveData.h" />
+    <ClInclude Include="SaveManager.h" />
+    <ClInclude Include="SavePath.h" />
     <ClInclude Include="SceneManager.h" />
     <ClInclude Include="Slime.h" />
     <ClInclude Include="StageItems.h" />
@@ -171,9 +174,14 @@
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="Progression.cpp" />
     <ClCompile Include="RecipeData.cpp" />
+    <ClCompile Include="SaveData.cpp" />
+    <ClCompile Include="SaveManager.cpp" />
+    <ClCompile Include="SaveMenu.cpp" />
+    <ClCompile Include="SavePath.cpp" />
     <ClCompile Include="SceneDraw.cpp" />
     <ClCompile Include="SceneManager.cpp" />
     <ClCompile Include="SceneMenu.cpp" />
+    <ClCompile Include="SessionSave.cpp" />
     <ClCompile Include="Slime.cpp" />
     <ClCompile Include="StageEndDraw.cpp" />
     <ClCompile Include="StageItems.cpp" />

@@ -43,3 +43,21 @@ int Progression::AttackPower() const
 {
     return GameConfig::PlayerAttackPower + (level_ - 1) * 2;
 }
+
+bool Progression::Restore(int level, int exp)
+{
+    if (level < 1
+        || level > 30
+        || exp < 0
+        || (level == 30
+            ? exp != 0
+            : exp >= level * 10))
+    {
+        return false;
+    }
+
+    level_ = level;
+    exp_ = exp;
+
+    return true;
+}
