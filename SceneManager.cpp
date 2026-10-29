@@ -4,6 +4,7 @@
 #include "UIHelpers.h"
 #include "DxLib.h"
 
+//@‰Šúİ’è
 void SceneManager::Init(
     const std::wstring& saveDirectory)
 {
